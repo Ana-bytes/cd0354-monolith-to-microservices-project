@@ -1,86 +1,316 @@
-# Udagram Image Filtering Application
+# Udagram Microservices Project
 
-Udagram is a simple cloud application developed alongside the Udacity Cloud Developer Nanodegree. It allows users to register and log into a web client, post photos to the feed, and process photos using an image filtering microservice.
+Udagram is a cloud-based image sharing application developed as part of the Udacity Cloud Developer Nanodegree.
 
-The project is split into two parts:
-1. Frontend - Angular web application built with Ionic Framework
-2. Backend RESTful API - Node-Express application
+This project refactors the original monolithic Udagram backend into a microservices architecture. The application components are containerized using Docker and configured for deployment to Kubernetes on AWS EKS.
 
-## Getting Started
-> _tip_: it's recommended that you start with getting the backend API running since the frontend web application depends on the API.
+## Architecture
 
-### Prerequisite
-1. The depends on the Node Package Manager (NPM). You will need to download and install Node from [https://nodejs.com/en/download](https://nodejs.org/en/download/). This will allow you to be able to run `npm` commands.
-2. Environment variables will need to be set. These environment variables include database connection details that should not be hard-coded into the application code.
+The application is divided into four main components:
 
-#### Environment Script
-A file named `set_env.sh` has been prepared as an optional tool to help you configure these variables on your local development environment.
- 
-We do _not_ want your credentials to be stored in git. After pulling this `starter` project, run the following command to tell git to stop tracking the script in git but keep it stored locally. This way, you can use the script for your convenience and reduce risk of exposing your credentials.
-`git rm --cached set_env.sh`
+- `udagram-api-feed` - Handles feed and image-related API operations
+- `udagram-api-user` - Handles user registration and authentication
+- `udagram-frontend` - Angular/Ionic frontend application
+- `udagram-reverseproxy` - Nginx reverse proxy that routes requests to the backend microservices
 
-Afterwards, we can prevent the file from being included in your solution by adding the file to our `.gitignore` file.
+The application uses:
 
-### 1. Database
-Create a PostgreSQL database either locally or on AWS RDS. The database is used to store the application's metadata.
+- **AWS RDS PostgreSQL** for application data
+- **AWS S3** for image storage
+- **Docker** for containerization
+- **Kubernetes / AWS EKS** for container orchestration
+- **Nginx** as the reverse proxy
+- **Travis CI configuration** for the CI/CD pipeline
+- **Docker Hub** for container image storage
 
-* We will need to use password authentication for this project. This means that a username and password is needed to authenticate and access the database.
-* The port number will need to be set as `5432`. This is the typical port that is used by PostgreSQL so it is usually set to this port by default.
+## Microservices
 
-Once your database is set up, set the config values for environment variables prefixed with `POSTGRES_` in `set_env.sh`.
-* If you set up a local database, your `POSTGRES_HOST` is most likely `localhost`
-* If you set up an RDS database, your `POSTGRES_HOST` is most likely in the following format: `***.****.us-west-1.rds.amazonaws.com`. You can find this value in the AWS console's RDS dashboard.
+The original backend was separated into two independent backend services:
 
+### Feed API
 
-### 2. S3
-Create an AWS S3 bucket. The S3 bucket is used to store images that are displayed in Udagram.
+`udagram-api-feed`
 
-Set the config values for environment variables prefixed with `AWS_` in `set_env.sh`.
+Handles feed-related operations and communication with the image storage and database.
 
-### 3. Backend API
-Launch the backend API locally. The API is the application's interface to S3 and the database.
+### User API
 
-* To download all the package dependencies, run the command from the directory `udagram-api/`:
-    ```bash
-    npm install .
-    ```
-* To run the application locally, run:
-    ```bash
-    npm run dev
-    ```
-* You can visit `http://localhost:8080/api/v0/feed` in your web browser to verify that the application is running. You should see a JSON payload. Feel free to play around with Postman to test the API's.
+`udagram-api-user`
 
-### 4. Frontend App
-Launch the frontend app locally.
+Handles user-related operations such as registration and authentication.
 
-* To download all the package dependencies, run the command from the directory `udagram-frontend/`:
-    ```bash
-    npm install .
-    ```
-* Install Ionic Framework's Command Line tools for us to build and run the application:
-    ```bash
-    npm install -g ionic
-    ```
-* Prepare your application by compiling them into static files.
-    ```bash
-    ionic build
-    ```
-* Run the application locally using files created from the `ionic build` command.
-    ```bash
-    ionic serve
-    ```
-* You can visit `http://localhost:8100` in your web browser to verify that the application is running. You should see a web interface.
+The two backend services can be built, deployed, and scaled independently.
 
-## Tips
-1. Take a look at `udagram-api` -- does it look like we can divide it into two modules to be deployed as separate microservices?
-2. The `.dockerignore` file is included for your convenience to not copy `node_modules`. Copying this over into a Docker container might cause issues if your local environment is a different operating system than the Docker image (ex. Windows or MacOS vs. Linux).
-3. It's useful to "lint" your code so that changes in the codebase adhere to a coding standard. This helps alleviate issues when developers use different styles of coding. `eslint` has been set up for TypeScript in the codebase for you. To lint your code, run the following:
-    ```bash
-    npx eslint --ext .js,.ts src/
-    ```
-    To have your code fixed automatically, run
-    ```bash
-    npx eslint --ext .js,.ts src/ --fix
-    ```
-4. `set_env.sh` is really for your backend application. Frontend applications have a different notion of how to store configurations. Configurations for the application endpoints can be configured inside of the `environments/environment.*ts` files.
-5. In `set_env.sh`, environment variables are set with `export $VAR=value`. Setting it this way is not permanent; every time you open a new terminal, you will have to run `set_env.sh` to reconfigure your environment variables. To verify if your environment variable is set, you can check the variable with a command like `echo $POSTGRES_USERNAME`.
+## Docker
+
+Each application component contains its own Dockerfile and can be built as an independent Docker image.
+
+The following Docker images were created:
+
+- `anabytesdocker/udagram-api-feed`
+- `anabytesdocker/udagram-api-user`
+- `anabytesdocker/udagram-frontend`
+- `anabytesdocker/udagram-reverseproxy`
+
+Example build commands:
+
+```bash
+docker build -t anabytesdocker/udagram-api-feed ./udagram-api-feed
+docker build -t anabytesdocker/udagram-api-user ./udagram-api-user
+docker build -t anabytesdocker/udagram-frontend ./udagram-frontend
+docker build -t anabytesdocker/udagram-reverseproxy ./udagram-reverseproxy
+```
+
+The images are stored in Docker Hub.
+
+Docker Hub evidence is available in:
+
+```text
+screenshots/DockerHub.png
+```
+
+## CI/CD - Travis CI
+
+The project includes a `.travis.yml` configuration for the CI/CD pipeline.
+
+The Travis CI pipeline is configured to:
+
+1. Build the Feed API Docker image
+2. Build the User API Docker image
+3. Build the Frontend Docker image
+4. Build the Reverse Proxy Docker image
+5. Authenticate to Docker Hub using environment variables
+6. Push the successfully built Docker images to Docker Hub
+
+The Docker Hub username and password are supplied through environment variables rather than being hard-coded into `.travis.yml`.
+
+### Travis CI Build Limitation
+
+The Travis CI pipeline configuration has been implemented in `.travis.yml`.
+
+However, an actual Travis CI build could not be executed because repository/build access was blocked by the Travis CI OSS/pricing request process.
+
+A screenshot documenting the Travis CI access/request limitation is included as:
+
+```text
+screenshots/travis-ci-oss-request.png
+```
+
+The `.travis.yml` file remains included in the project to demonstrate the configured CI/CD build and Docker image publishing process.
+
+## Kubernetes
+
+Kubernetes configuration files are located in the `k8s/` directory.
+
+The project contains Kubernetes deployments and services for:
+
+- Feed API
+- User API
+- Frontend
+- Reverse Proxy
+
+### Deployments
+
+The following deployment manifests are included:
+
+```text
+k8s/feed-deployment.yml
+k8s/user-deployment.yml
+k8s/frontend-deployment.yml
+k8s/reverseproxy-deployment.yml
+```
+
+Each application deployment is configured with two replicas:
+
+```yaml
+replicas: 2
+```
+
+This allows multiple pods of each application component to run in the Kubernetes cluster.
+
+### Services
+
+The following Kubernetes service manifests are included:
+
+```text
+k8s/feed-service.yml
+k8s/user-service.yml
+k8s/frontend-service.yml
+k8s/reverseproxy-service.yml
+```
+
+The backend microservices use Kubernetes `ClusterIP` services for internal communication.
+
+The frontend and reverse proxy use `LoadBalancer` services to provide external access.
+
+## AWS EKS Deployment
+
+The Kubernetes application was deployed to an AWS EKS cluster.
+
+Example commands used to deploy and inspect the application:
+
+```bash
+kubectl apply -f ./k8s/
+kubectl get nodes
+kubectl get pods
+kubectl get services
+kubectl get deployments
+```
+
+During the successful deployment, the application components were running as Kubernetes pods with two replicas configured for each deployment.
+
+Deployment evidence is included in the `screenshots/` directory.
+
+## Reverse Proxy
+
+Nginx is used as the reverse proxy for the backend APIs.
+
+Requests are routed to the appropriate Kubernetes service.
+
+Example routing configuration:
+
+```nginx
+location /api/v0/feed {
+    proxy_pass http://udagram-api-feed:8080;
+}
+
+location /api/v0/users {
+    proxy_pass http://udagram-api-user:8080;
+}
+```
+
+This allows the Feed and User APIs to operate as separate microservices while being accessible through the reverse proxy.
+
+## Database
+
+The application uses PostgreSQL hosted on AWS RDS.
+
+The Kubernetes backend workloads connect to the RDS PostgreSQL database using port:
+
+```text
+5432
+```
+
+Network access between EKS and RDS is controlled using AWS security groups.
+
+The EKS workloads and RDS database were configured to allow the required database communication.
+
+Supporting security group evidence is included in:
+
+```text
+screenshots/RDS-EKS_SG.png
+```
+
+## S3 Storage
+
+AWS S3 is used for image storage.
+
+The S3 configuration is provided to the backend through environment configuration rather than being hard-coded directly into the application.
+
+## Environment Configuration
+
+Non-sensitive application configuration is supplied to Kubernetes using a ConfigMap:
+
+```text
+k8s/env-configmap.yml
+```
+
+This includes configuration such as:
+
+- AWS region
+- S3 bucket
+- PostgreSQL host
+- PostgreSQL database
+
+Sensitive configuration is supplied separately using Kubernetes Secrets.
+
+The real Kubernetes secret manifest is intentionally excluded from Git.
+
+## Security
+
+Sensitive credentials are not committed to the repository.
+
+The Kubernetes secret file:
+
+```text
+k8s/env-secret.yml
+```
+
+is excluded using `.gitignore`.
+
+Sensitive information such as:
+
+- PostgreSQL username/password
+- AWS credentials
+- Docker Hub credentials
+
+should be supplied using environment variables or Kubernetes Secrets.
+
+No real credentials should be committed to source control.
+
+## Project Structure
+
+```text
+.
+├── udagram-api-feed/
+│   └── Dockerfile
+│
+├── udagram-api-user/
+│   └── Dockerfile
+│
+├── udagram-frontend/
+│   └── Dockerfile
+│
+├── udagram-reverseproxy/
+│   └── Dockerfile
+│
+├── k8s/
+│   ├── env-configmap.yml
+│   ├── feed-deployment.yml
+│   ├── feed-service.yml
+│   ├── user-deployment.yml
+│   ├── user-service.yml
+│   ├── frontend-deployment.yml
+│   ├── frontend-service.yml
+│   ├── reverseproxy-deployment.yml
+│   └── reverseproxy-service.yml
+│
+├── screenshots/
+│   ├── DockerHub.png
+│   ├── kubectl get nodes.png
+│   ├── kubernetes-pod.png
+│   ├── kubernetes-pod-redeploy.png
+│   ├── kubernetes-services.png
+│   ├── kubernetes-describe_services.png
+│   ├── kubernetes-describe_services-1.png
+│   ├── kubernetes-describe_services-2.png
+│   ├── kubernetes-deployments-config.png
+│   ├── RDS-EKS_SG.png
+│   └── travis-ci-oss-request.png
+│
+├── .travis.yml
+├── .gitignore
+└── README.md
+```
+
+## Deployment Evidence
+
+The `screenshots/` directory contains evidence from the project implementation and deployment, including:
+
+- Docker images available in Docker Hub
+- AWS EKS Kubernetes nodes
+- Running Kubernetes application pods
+- Kubernetes services
+- Kubernetes service configuration
+- Kubernetes deployment configuration
+- Pod redeployment
+- RDS/EKS security group configuration
+- Travis CI OSS/pricing access limitation
+
+These screenshots document the successful Docker and Kubernetes portions of the project as well as the external limitation encountered when attempting to execute the Travis CI pipeline.
+
+## Notes
+
+The AWS environment used for this project is a temporary Udacity/VocLabs environment. AWS resources and credentials may become unavailable or be reset when the lab session expires.
+
+The Kubernetes and AWS screenshots included in this repository were captured while the required resources were active.
