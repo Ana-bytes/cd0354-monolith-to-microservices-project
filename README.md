@@ -267,6 +267,7 @@ No real credentials should be committed to source control.
 ├── k8s/
 │   ├── env-configmap.yml
 │   ├── feed-deployment.yml
+│   ├── feed-hpa.yml
 │   ├── feed-service.yml
 │   ├── user-deployment.yml
 │   ├── user-service.yml
@@ -308,6 +309,28 @@ The `screenshots/` directory contains evidence from the project implementation a
 - Travis CI OSS/pricing access limitation
 
 These screenshots document the successful Docker and Kubernetes portions of the project as well as the external limitation encountered when attempting to execute the Travis CI pipeline.
+
+
+### Horizontal Pod Autoscaling
+
+The Feed API is configured with a Kubernetes Horizontal Pod Autoscaler (HPA).
+
+The HPA configuration is stored in:
+
+`k8s/feed-hpa.yml`
+
+Autoscaling is configured with:
+
+- Minimum replicas: 2
+- Maximum replicas: 4
+- Target average CPU utilization: 50%
+
+CPU and memory resource requests and limits are defined in
+`feed-deployment.yml` to support CPU-based autoscaling.
+
+The HPA configuration was successfully deployed. Final CPU metric
+verification depends on the availability of the AWS EKS worker nodes
+and Kubernetes Metrics Server in the temporary VocLabs environment.
 
 ## Notes
 
