@@ -120,13 +120,13 @@ k8s/frontend-deployment.yml
 k8s/reverseproxy-deployment.yml
 ```
 
-Each application deployment is configured with two replicas:
+Each application deployment is initially configured with two replicas:
 
 ```yaml
 replicas: 2
 ```
 
-This allows multiple pods of each application component to run in the Kubernetes cluster.
+This allows multiple pods of each application component to run in the Kubernetes cluster. The Feed API can scale beyond two replicas through its Horizontal Pod Autoscaler.
 
 ### Services
 
@@ -157,7 +157,7 @@ kubectl get services
 kubectl get deployments
 ```
 
-During the successful deployment, the application components were running as Kubernetes pods with two replicas configured for each deployment.
+During successful deployment, the application components were running as Kubernetes pods with multiple replicas.
 
 Deployment evidence is included in the `screenshots/` directory.
 
@@ -248,6 +248,67 @@ should be supplied using environment variables or Kubernetes Secrets.
 
 No real credentials should be committed to source control.
 
+## Horizontal Pod Autoscaling
+
+Horizontal Pod Autoscaling is configured for the Feed API using CPU utilization.
+
+Configuration:
+
+- Target deployment: `udagram-api-feed`
+- Minimum replicas: `2`
+- Maximum replicas: `4`
+- Target CPU utilization: `50%`
+- CPU request: `100m`
+- CPU limit: `250m`
+- Memory request: `256Mi`
+- Memory limit: `1Gi`
+
+The Feed deployment memory limit was increased to allow TypeScript compilation and Node.js application startup to complete successfully in the Kubernetes environment.
+
+The HPA was successfully verified using:
+
+```bash
+kubectl describe hpa udagram-api-feed-hpa
+```
+
+During verification, Kubernetes reported:
+
+- `AbleToScale: True`
+- `ScalingActive: True`
+- CPU metrics were successfully collected
+- The Feed API scaled from the minimum of 2 replicas up to the configured maximum of 4 replicas
+
+Evidence:
+
+```text
+screenshots/kubernetes-hpa.png
+```
+
+## Debugging, Monitoring, and Logging
+
+Backend API activity was verified using Kubernetes pod logs.
+
+A request was sent to:
+
+```text
+GET /api/v0/feed
+```
+
+The Feed API pod logs recorded the request and subsequent PostgreSQL queries against the `FeedItems` table, confirming that the request reached the backend service and triggered database activity.
+
+Example logged activity:
+
+```text
+GET /api/v0/feed
+Executing (default): SELECT count(*) AS "count" FROM "FeedItems" AS "FeedItem";
+```
+
+Evidence:
+
+```text
+screenshots/backend-api-logs.png
+```
+
 ## Project Structure
 
 ```text
@@ -286,6 +347,8 @@ No real credentials should be committed to source control.
 │   ├── kubernetes-describe_services-1.png
 │   ├── kubernetes-describe_services-2.png
 │   ├── kubernetes-deployments-config.png
+│   ├── kubernetes-hpa.png
+│   ├── backend-api-logs.png
 │   ├── RDS-EKS_SG.png
 │   └── travis-ci-oss-request.png
 │
@@ -305,32 +368,12 @@ The `screenshots/` directory contains evidence from the project implementation a
 - Kubernetes service configuration
 - Kubernetes deployment configuration
 - Pod redeployment
+- Horizontal Pod Autoscaler with active CPU metrics and successful scaling
+- Backend API request and database activity logs
 - RDS/EKS security group configuration
 - Travis CI OSS/pricing access limitation
 
-These screenshots document the successful Docker and Kubernetes portions of the project as well as the external limitation encountered when attempting to execute the Travis CI pipeline.
-
-
-### Horizontal Pod Autoscaling
-
-The Feed API is configured with a Kubernetes Horizontal Pod Autoscaler (HPA).
-
-The HPA configuration is stored in:
-
-`k8s/feed-hpa.yml`
-
-Autoscaling is configured with:
-
-- Minimum replicas: 2
-- Maximum replicas: 4
-- Target average CPU utilization: 50%
-
-CPU and memory resource requests and limits are defined in
-`feed-deployment.yml` to support CPU-based autoscaling.
-
-The HPA configuration was successfully deployed. Final CPU metric
-verification depends on the availability of the AWS EKS worker nodes
-and Kubernetes Metrics Server in the temporary VocLabs environment.
+These screenshots document the successful Docker and Kubernetes portions of the project, including service orchestration, autoscaling, and backend API logging, as well as the external limitation encountered when attempting to execute the Travis CI pipeline.
 
 ## Notes
 
