@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: env-config
+data:
+  POSTGRES_HOST: "udacity-microservice.c7evdsfxf30z.us-east-1.rds.amazonaws.com"
+  POSTGRES_DB: "postgres"
+  AWS_REGION: "us-east-1"
+  AWS_PROFILE: "udacity"
+  AWS_BUCKET: "udacity-microservice-project"
