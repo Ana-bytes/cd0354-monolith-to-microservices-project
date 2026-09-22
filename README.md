@@ -86,17 +86,33 @@ The Docker Hub username and password are supplied through environment variables 
 
 ### Travis CI Build Limitation
 
-The Travis CI pipeline configuration has been implemented in `.travis.yml`.
+The CI/CD pipeline was implemented in `.travis.yml`; however, a successful Travis CI build could not be executed because build access requires an eligible Travis CI subscription.
 
-However, an actual Travis CI build could not be executed because repository/build access was blocked by the Travis CI OSS/pricing request process.
+Travis CI Support confirmed that their free Open Source Subscription is available only to qualifying non-commercial open-source projects.
 
-A screenshot documenting the Travis CI access/request limitation is included as:
+The eligibility requirements provided by Travis CI Support include:
+
+- The applicant must be a project lead or regular committer with a recent commit.
+- The project must be at least three months old and under active development.
+- The project must meet the Open Source Definition (OSD).
+- The project must not be sponsored by a commercial company or organization.
+- The project must not provide commercial services or distribute paid versions of the software.
+
+This repository was created for the Udacity project and does not meet the required three-month project-age condition. Therefore, the free Open Source Subscription could not be used to execute the Travis CI pipeline.
+
+Evidence of the original Travis CI access/subscription request is included in:
 
 ```text
 screenshots/travis-ci-oss-request.png
 ```
 
-The `.travis.yml` file remains included in the project to demonstrate the configured CI/CD build and Docker image publishing process.
+Travis CI Support's response explaining the Open Source Subscription eligibility requirements is included in:
+
+```text
+screenshots/travis-ci-support-response.html
+```
+
+The `.travis.yml` configuration remains included in the repository as evidence of the implemented CI/CD build and Docker image publishing process.
 
 ## Kubernetes
 
@@ -126,7 +142,9 @@ Each application deployment is initially configured with two replicas:
 replicas: 2
 ```
 
-This allows multiple pods of each application component to run in the Kubernetes cluster. The Feed API can scale beyond two replicas through its Horizontal Pod Autoscaler.
+This allows multiple pods of each application component to run in the Kubernetes cluster.
+
+The Feed API can scale beyond two replicas through its Horizontal Pod Autoscaler.
 
 ### Services
 
@@ -263,7 +281,7 @@ Configuration:
 - Memory request: `256Mi`
 - Memory limit: `1Gi`
 
-The Feed deployment memory limit was increased to allow TypeScript compilation and Node.js application startup to complete successfully in the Kubernetes environment.
+The Feed deployment memory limit was increased to allow the TypeScript compilation and Node.js application startup to complete successfully in the Kubernetes environment.
 
 The HPA was successfully verified using:
 
@@ -350,7 +368,8 @@ screenshots/backend-api-logs.png
 │   ├── kubernetes-hpa.png
 │   ├── backend-api-logs.png
 │   ├── RDS-EKS_SG.png
-│   └── travis-ci-oss-request.png
+│   ├── travis-ci-oss-request.png
+│   └── travis-ci-support-response.html
 │
 ├── .travis.yml
 ├── .gitignore
@@ -371,9 +390,12 @@ The `screenshots/` directory contains evidence from the project implementation a
 - Horizontal Pod Autoscaler with active CPU metrics and successful scaling
 - Backend API request and database activity logs
 - RDS/EKS security group configuration
-- Travis CI OSS/pricing access limitation
+- Travis CI OSS/subscription access limitation
+- Travis CI Support response documenting the Open Source Subscription eligibility requirements
 
-These screenshots document the successful Docker and Kubernetes portions of the project, including service orchestration, autoscaling, and backend API logging, as well as the external limitation encountered when attempting to execute the Travis CI pipeline.
+These files document the successful Docker and Kubernetes portions of the project, including service orchestration, autoscaling, and backend API logging.
+
+The Travis CI evidence additionally documents the external subscription restriction that prevented execution of the configured Travis CI pipeline.
 
 ## Notes
 
